@@ -1,0 +1,36 @@
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Arduino & Build Artifacts
+build/
+sketch/build/
+*.bin
+*.hex
+*.elf
+*.map
+*.o
+*.d
+*.a
+*.sym
+*.tmp
+
+# PlatformIO & IDE Settings
+.pio/
+.pioenvs/
+.piolibdeps/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sensitive Credentials / Local Configs
+secrets.h
+credentials.h
+*.local.h

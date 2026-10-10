@@ -142,11 +142,11 @@ Unter dem Menü **Werkzeuge (Tools)** folgende Optionen wählen:
 
 Das System schützt die Pumpe in zwei Stufen vor Trockenlaufschäden:
 
-1. **Präventive Einschaltblockade** ([sketch.ino:L13-L26](file:///Users/martinkade/Projekte/SmartHome/Watering/sketch/sketch.ino#L13-L26)):
+1. **Präventive Einschaltblockade** ([sketch.ino:L40-L68](file:///Users/martinkade/Projekte/SmartHome/Watering/sketch/sketch.ino#L40-L68)):
    - Erhält der ESP32 einen Einschaltbefehl von Google Home, prüft `onPumpStateChange()`, ob der Schwimmerschalter geschlossen ist (`LOW`).
    - Ist der Tank leer (`HIGH`), wird das Relais **nicht** aktiviert und der Status in Google Home sofort wieder auf `AUS` gesetzt.
 
-2. **Echtzeit-Notabschaltung** ([sketch.ino:L59-L66](file:///Users/martinkade/Projekte/SmartHome/Watering/sketch/sketch.ino#L59-L66)):
+2. **Echtzeit-Notabschaltung** ([sketch.ino:L112-L121](file:///Users/martinkade/Projekte/SmartHome/Watering/sketch/sketch.ino#L112-L121)):
    - Im `loop()` wird kontinuierlich überwacht, ob während des Betriebs der Wasserpegel abfällt.
    - Sinkt der Pegel unter das Limit, schaltet der ESP32 das Relais unmittelbar ab und setzt den Matter-Status auf `false`.
 
@@ -156,6 +156,7 @@ Das System schützt die Pumpe in zwei Stufen vor Trockenlaufschäden:
 
 ```
 Watering/
+├── .gitignore          # Git-Ausschlussregeln (Build-Dateien, OS-Dateien)
 ├── PROJECT.md          # Ursprüngliche Notizen & Matter-Konzept
 ├── README.md           # Projektdokumentation
 └── sketch/
