@@ -160,10 +160,14 @@ Das System schützt die Pumpe in zwei Stufen vor Trockenlaufschäden:
 
 ```
 Watering/
+├── .agents/
+│   └── skills/
+│       └── esp32-matter-firmware/ # KI-Agent Skill (Workflows & Checks)
 ├── .gitignore          # Git-Ausschlussregeln (Build-Dateien, OS-Dateien)
+├── AGENTS.md           # Leitfaden & Sicherheitsregeln für KI-Agenten
 ├── PROJECT.md          # Ursprüngliche Notizen & Matter-Konzept
 ├── README.md           # Projektdokumentation
-├── SKETCH.md       # Detaillierter Hardware-Schaltplan & Verdrahtung
+├── SKETCH.md           # Detaillierter Hardware-Schaltplan & Verdrahtung
 └── sketch/
     └── sketch.ino      # Arduino-Quellcode für ESP32 Matter-Client
 ```
