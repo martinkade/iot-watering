@@ -47,20 +47,22 @@ graph TD
 
 ---
 
-## 🛠 Hardware-Anforderungen
+## 🛠 Hardware-Anforderungen & Einkaufsliste
 
-1. **ESP32 Entwicklungsboard**:
-   - Standard-Board (z. B. ESP32 NodeMCU, ESP32 WROOM-32) mit mind. **4 MB Flash**.
-   - Integriertes Wi-Fi und Bluetooth Low Energy (BLE).
-2. **Relais-Modul**:
-   - 1-Kanal Relais mit Optokoppler (5V oder 3,3V Steuerspannung, Active LOW geschaltet).
-3. **Schwimmerschalter / Pegelsensor**:
-   - Reed-Schwimmerschalter für das Regenfass / Wassertank (Schließer/Öffner gegen GND).
-4. **Pumpe / Magnetventil & Stromversorgung**:
-   - Tauchpumpe oder 12V-Magnetventil inklusive passendem Netzteil.
-5. **Google Home Matter-Infrastruktur**:
-   - Ein Google Matter-Controller im selben WLAN (z. B. *Google Nest Hub, Nest Audio, Nest Mini, Chromecast mit Google TV*).
-   - Google Home App (iOS / Android).
+Die folgenden Komponenten werden für den Aufbau benötigt. Über die Links gelangst du direkt zu passenden Angeboten auf Amazon:
+
+| Komponente | Spezifikation / Empfehlung | Bezugsquelle (Amazon) |
+| :--- | :--- | :--- |
+| **ESP32 Dev Module** | ESP32-WROOM-32 / NodeMCU (mind. **4 MB Flash**, Wi-Fi + BLE) | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=ESP32+NodeMCU+Development+Board) |
+| **1-Kanal Relais-Modul** | 5V Steuerkreis mit Optokoppler, Active-LOW, Schließer (`NO`) | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=Relais+Modul+5V+1+Kanal+Optokoppler) |
+| **Schwimmerschalter** | Pegelsensor / Reed-Kontakt für Wassertank (`INPUT_PULLUP` gegen GND) | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=Schwimmerschalter+Wasserstandssensor) |
+| **12V DC Tauchpumpe** | 12V Kleinspannungs-Tauchpumpe für Garten/Wassertank | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=12V+Tauchpumpe+Garten+Wasser) |
+| **12V DC Netzteil** | 12V DC Steckernetzteil, mind. 2A bis 3A | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=12V+2A+Netzteil+DC) |
+| **Step-Down Wandler** | LM2596 / Buck-Converter (wandelt 12V in stabile 5V für ESP32/Relais) | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=LM2596+Step-Down+Wandler) |
+| **Freilaufdiode** | 1N4007 Gleichrichterdiode (Schutz vor induktiver Rückspannung) | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=1N4007+Gleichrichterdiode) |
+| **Jumper-Kabel** | Dupont-Kabel (Female-to-Female & Male-to-Female) | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=Jumper+Kabel+Dupont) |
+| **Gehäuse (Optional)** | Wasserdichte IP65 Abzweigdose für Außeneinsatz | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=IP65+Elektronik+Geh%C3%A4use+wasserdicht) |
+| **Matter Controller** | Google Nest Hub, Nest Audio oder Nest Mini im Heimnetzwerk | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=Google+Nest+Hub) |
 
 ---
 

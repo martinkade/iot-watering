@@ -15,6 +15,7 @@ Dieses Dokument enthält den vollständigen Schaltplan, die Verdrahtungslogik un
 - [5. Stromversorgungskonzepte](#5-stromversorgungskonzepte)
 - [6. Schwimmerschalter (Trockenlaufschutz)](#6-schwimmerschalter-trockenlaufschutz)
 - [7. Wichtige Praxistipps & Schutzmaßnahmen](#7-wichtige-praxistipps--schutzmaßnahmen)
+- [8. Stückliste & Bezugsquellen (Amazon)](#8-stückliste--bezugsquellen-amazon)
 
 ---
 
@@ -234,3 +235,19 @@ Ein einziges **12V DC Netzteil** (mind. 2A bis 3A, je nach Pumpenleistung) verso
    Platziere Elektronik, ESP32 und Relais in einem wetterfesten Gehäuse (**IP65** oder höher) mit Kabelverschraubungen (PG-Verschraubungen).
 4. **Schlauch-Rückheberschutz:**
    Achte darauf, dass das Schlauchende im Beet höher liegt als der maximale Wasserstand im Fass, oder baue ein Anti-Siphon-Ventil / Belüftungsventil ein, damit Wasser nach dem Abschalten nicht durch Kapillarwirkung von alleine weiterläuft.
+
+---
+
+## 8. Stückliste & Bezugsquellen (Amazon)
+
+| Bauteil | Typ / Spezifikation | Amazon Bezugsquelle |
+| :--- | :--- | :--- |
+| **Mikrocontroller** | ESP32 NodeMCU (WROOM-32, mind. 4MB Flash) | [🛒 ESP32 NodeMCU auf Amazon](https://www.amazon.de/s?k=ESP32+NodeMCU+Development+Board) |
+| **Relais** | 1-Kanal 5V Relais mit Optokoppler (Active LOW) | [🛒 5V Relaismodul auf Amazon](https://www.amazon.de/s?k=Relais+Modul+5V+1+Kanal+Optokoppler) |
+| **Pegelsensor** | Schwimmerschalter / Reed-Schalter (vertikal oder horizontal) | [🛒 Schwimmerschalter auf Amazon](https://www.amazon.de/s?k=Schwimmerschalter+Wasserstandssensor) |
+| **Pumpe** | 12V DC Tauchpumpe für Garten / Wassertank | [🛒 12V Tauchpumpe auf Amazon](https://www.amazon.de/s?k=12V+Tauchpumpe+Garten+Wasser) |
+| **Netzteil** | 12V DC Netzteil (mind. 2A, z. B. mit Hohlstecker/Klemmen) | [🛒 12V DC Netzteil auf Amazon](https://www.amazon.de/s?k=12V+2A+Netzteil+DC) |
+| **Spannungswandler** | LM2596 Step-Down Buck Converter (12V $\rightarrow$ 5V) | [🛒 LM2596 Wandler auf Amazon](https://www.amazon.de/s?k=LM2596+Step-Down+Wandler) |
+| **Diode** | 1N4007 Gleichrichterdiode (Freilaufdiode) | [🛒 1N4007 Diode auf Amazon](https://www.amazon.de/s?k=1N4007+Gleichrichterdiode) |
+| **Kabel** | Dupont Steckbrücken (Female/Female, Male/Female) | [🛒 Jumper Kabel auf Amazon](https://www.amazon.de/s?k=Jumper+Kabel+Dupont) |
+| **Gehäuse** | Wasserdichtes IP65 Elektronikgehäuse | [🛒 IP65 Gehäuse auf Amazon](https://www.amazon.de/s?k=IP65+Elektronik+Geh%C3%A4use+wasserdicht) |
