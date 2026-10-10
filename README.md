@@ -12,7 +12,7 @@ Das System steuert eine Wasserpumpe bzw. ein Magnetventil über ein Relais und v
 - [Systemarchitektur](#-systemarchitektur)
 - [Hardware-Anforderungen](#-hardware-anforderungen)
 - [Pinbelegung & Verdrahtung](#-pinbelegung--verdrahtung)
-- [Vollständiger Schaltplan (SCHALTPLAN.md)](SCHALTPLAN.md)
+- [Vollständiger Schaltplan (SKETCH.md)](SKETCH.md)
 - [Software-Voraussetzungen](#-software-voraussetzungen)
 - [Installation & Flashen](#-installation--flashen)
 - [Inbetriebnahme mit Google Home](#-inbetriebnahme-mit-google-home)
@@ -85,7 +85,7 @@ ESP32                    Schwimmerschalter (Tank)
 ```
 
 > [!TIP]
-> Der ausführliche Gesamtschaltplan inklusive 12V-Netzteil, Step-Down-Wandler, Relais-Lastseite, Freilaufdiode und Pumpenbeschaltung ist in [SCHALTPLAN.md](file:///Users/martinkade/Projekte/SmartHome/Watering/SCHALTPLAN.md) dokumentiert.
+> Der ausführliche Gesamtschaltplan inklusive 12V-Netzteil, Step-Down-Wandler, Relais-Lastseite, Freilaufdiode und Pumpenbeschaltung ist in [SKETCH.md](file:///Users/martinkade/Projekte/SmartHome/Watering/SKETCH.md) dokumentiert.
 
 ---
 
@@ -163,7 +163,7 @@ Watering/
 ├── .gitignore          # Git-Ausschlussregeln (Build-Dateien, OS-Dateien)
 ├── PROJECT.md          # Ursprüngliche Notizen & Matter-Konzept
 ├── README.md           # Projektdokumentation
-├── SCHALTPLAN.md       # Detaillierter Hardware-Schaltplan & Verdrahtung
+├── SKETCH.md       # Detaillierter Hardware-Schaltplan & Verdrahtung
 └── sketch/
     └── sketch.ino      # Arduino-Quellcode für ESP32 Matter-Client
 ```

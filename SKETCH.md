@@ -22,37 +22,37 @@ Dieses Dokument enthält den vollständigen Schaltplan, die Verdrahtungslogik un
 
 ```mermaid
 flowchart TD
-    subgraph Stromversorgung [Spannungsversorgung]
-        PSU[12V DC Netzteil]
-        BUCK[Step-Down Wandler 12V -> 5V]
+    subgraph Stromversorgung ["Spannungsversorgung"]
+        PSU["12V DC Netzteil"]
+        BUCK["Step-Down Wandler 12V auf 5V"]
         PSU -->|12V DC| BUCK
     end
 
-    subgraph Steuerung [Niederspannung / Logik 3.3V & 5V]
-        ESP[ESP32 Dev Module]
-        FLOAT[Schwimmerschalter]
-        RELAY_CTRL[Relais Steuerseite mit Optokoppler]
+    subgraph Steuerung ["Niederspannung und Logik"]
+        ESP["ESP32 Dev Module"]
+        FLOAT["Schwimmerschalter"]
+        RELAY_CTRL["Relais Steuerseite mit Optokoppler"]
 
-        BUCK -->|5V| ESP
-        BUCK -->|5V (VCC)| RELAY_CTRL
+        BUCK -->|5V VIN| ESP
+        BUCK -->|5V VCC| RELAY_CTRL
         ESP -->|GND| RELAY_CTRL
-        ESP -->|GPIO 23 (IN)| RELAY_CTRL
+        ESP -->|GPIO 23 Active LOW| RELAY_CTRL
         ESP -->|GPIO 22| FLOAT
         ESP -->|GND| FLOAT
     end
 
-    subgraph Lastkreis [Lastkreis 12V DC]
-        RELAY_SW[Relais Kontakte COM / NO]
-        DIODE[Freilaufdiode 1N4007]
-        PUMP[12V Tauchpumpe]
+    subgraph Lastkreis ["Lastkreis 12V DC"]
+        RELAY_SW["Relais Kontakte COM und NO"]
+        DIODE["Freilaufdiode 1N4007"]
+        PUMP["12V Tauchpumpe"]
 
-        PSU -->|12V (+)| RELAY_SW
-        RELAY_SW -->|NO (geschaltet)| PUMP
-        PSU -->|GND (-)| PUMP
+        PSU -->|+12V| RELAY_SW
+        RELAY_SW -->|NO geschaltet| PUMP
+        PSU -->|GND Masse| PUMP
         DIODE -.->|Antiparallel| PUMP
     end
 
-    RELAY_CTRL -.->|Optokoppler / Spule| RELAY_SW
+    RELAY_CTRL -.->|Optokoppler Spule| RELAY_SW
 ```
 
 ---
