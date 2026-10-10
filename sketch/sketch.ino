@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Matter.h>
 #include <MatterOutlet.h>
+#include <MatterContactSensor.h>
 
 // ==============================================================================
 // Hardware Pin Configuration
@@ -11,19 +12,35 @@
 //   - HIGH = relay de-energized (contacts open -> Pump OFF)
 const int RELAY_PIN = 23;
 
-// GPIO 22 is connected to the water tank float switch (dry-run protection).
+// GPIO 22 is connected to the lower water tank float switch (dry-run protection).
 // Configured with the internal pull-up resistor (INPUT_PULLUP):
 //   - Float switch closed (sufficient water level): pulled down to GND (reads LOW)
-//   - Float switch open (tank empty / water level low): pulled up (reads HIGH)
-const int FLOAT_SWITCH_PIN = 22;
+//   - Float switch open (tank empty / dry-run condition): pulled up (reads HIGH)
+const int FLOAT_EMPTY_PIN = 22;
+// Alias for backward compatibility
+const int FLOAT_SWITCH_PIN = FLOAT_EMPTY_PIN;
+
+// GPIO 21 is connected to the upper water tank float switch (tank full indicator).
+// Configured with the internal pull-up resistor (INPUT_PULLUP):
+//   - Float switch closed (water at max capacity): pulled down to GND (reads LOW)
+//   - Float switch open (water level below max): pulled up (reads HIGH)
+const int FLOAT_FULL_PIN = 21;
 
 // ==============================================================================
-// Matter Device Endpoint
+// Matter Device Endpoints
 // ==============================================================================
 // Declare a Matter On/Off Outlet device cluster.
-// In smart home ecosystems such as Google Home, Apple Home, or Home Assistant,
-// this device is exposed as a controllable smart plug/switch for the water pump.
+// Exposed in Google Home / Apple Home as a controllable smart plug/switch for the water pump.
 MatterOutlet matterPump;
+
+// Declare a Matter Contact Sensor device cluster for water reservoir full status.
+// Exposed in Google Home / Apple Home as a contact sensor:
+//   - Closed (contact closed) = Tank FULL
+//   - Open (contact open)     = Tank NOT FULL
+MatterContactSensor matterTankFull;
+
+// Track previous state of the upper float switch to avoid redundant network updates
+bool lastTankFullState = false;
 
 // ==============================================================================
 // Callback Function: Matter State Change Handler
@@ -38,9 +55,9 @@ MatterOutlet matterPump;
 //   true  = state transition was accepted and executed.
 //   false = state transition was rejected (e.g., due to safety trip).
 bool onPumpStateChange(bool targetState) {
-  // Check the float switch to confirm if water is available in the reservoir.
+  // Check the lower float switch to confirm if water is available in the reservoir.
   // Switch connects to GND when water level is sufficient (Active LOW).
-  bool waterAvailable = (digitalRead(FLOAT_SWITCH_PIN) == LOW);
+  bool waterAvailable = (digitalRead(FLOAT_EMPTY_PIN) == LOW);
 
   if (targetState == true) {
     if (waterAvailable) {
@@ -79,18 +96,25 @@ void setup() {
   // Ensure the relay is safely de-energized (OFF) at startup to prevent unintended watering
   digitalWrite(RELAY_PIN, HIGH);
 
-  // Configure float switch pin with the internal pull-up resistor.
-  // This eliminates the need for an external physical pull-up resistor.
-  pinMode(FLOAT_SWITCH_PIN, INPUT_PULLUP);
+  // Configure lower float switch pin (dry-run protection) with internal pull-up resistor
+  pinMode(FLOAT_EMPTY_PIN, INPUT_PULLUP);
+
+  // Configure upper float switch pin (tank full indicator) with internal pull-up resistor
+  pinMode(FLOAT_FULL_PIN, INPUT_PULLUP);
+
+  // Initialize the endpoints before starting the Matter stack
+  matterPump.begin();
+  matterTankFull.begin();
+
+  // Register the callback function to handle incoming ON/OFF control commands
+  matterPump.onChange(onPumpStateChange);
 
   // Initialize the core ESP32 Matter stack
   Matter.begin();
 
-  // Initialize the Matter Outlet endpoint and register with the Matter node
-  matterPump.begin();
-
-  // Register the callback function to handle incoming ON/OFF control commands
-  matterPump.onChange(onPumpStateChange);
+  // Synchronize initial state of the upper float switch
+  lastTankFullState = (digitalRead(FLOAT_FULL_PIN) == LOW);
+  matterTankFull.setContact(lastTankFullState);
 
   Serial.println("Waiting for Matter commissioning / network ready...");
 
@@ -106,18 +130,29 @@ void setup() {
 }
 
 // ==============================================================================
-// Arduino Main Loop: Continuous Safety Watchdog
+// Arduino Main Loop: Continuous Safety Watchdog & Level Monitoring
 // ==============================================================================
 void loop() {
-  // Real-time emergency shut-off watchdog:
+  // 1. Real-time emergency shut-off watchdog (Lower float switch):
   // Continuously monitors if the water runs out while the pump is actively running.
-  // Condition: Relay is active (LOW) AND float switch signals low water level (HIGH).
-  if (digitalRead(RELAY_PIN) == LOW && digitalRead(FLOAT_SWITCH_PIN) == HIGH) {
+  // Condition: Relay is active (LOW) AND lower float switch signals low water level (HIGH).
+  if (digitalRead(RELAY_PIN) == LOW && digitalRead(FLOAT_EMPTY_PIN) == HIGH) {
     Serial.println("EMERGENCY SHUT-OFF: Water level dropped below minimum threshold!");
     // Immediately turn off the pump to prevent pump damage from running dry
     digitalWrite(RELAY_PIN, HIGH);
     // Update the Matter endpoint state so Google Home reflects the emergency shutdown
     matterPump.setState(false);
+  }
+
+  // 2. Tank Full Level Monitoring (Upper float switch):
+  // Reads the upper float switch and reports state transitions to Matter.
+  // Switch closed to GND (LOW) = water reached maximum mark (Contact closed = true).
+  bool currentTankFullState = (digitalRead(FLOAT_FULL_PIN) == LOW);
+  if (currentTankFullState != lastTankFullState) {
+    lastTankFullState = currentTankFullState;
+    matterTankFull.setContact(currentTankFullState);
+    Serial.printf("Tank Full sensor state changed: %s\n",
+                  currentTankFullState ? "FULL (Water reached max)" : "NOT FULL (Below max)");
   }
 
   // Short delay to avoid tight polling loop and yield CPU time to background tasks

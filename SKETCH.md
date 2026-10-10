@@ -31,15 +31,18 @@ flowchart TD
 
     subgraph Steuerung ["Niederspannung und Logik"]
         ESP["ESP32 Dev Module"]
-        FLOAT["Schwimmerschalter"]
+        FLOAT_EMPTY["Schwimmerschalter Unten (Trockenlauf)"]
+        FLOAT_FULL["Schwimmerschalter Oben (Tank voll)"]
         RELAY_CTRL["Relais Steuerseite mit Optokoppler"]
 
         BUCK -->|5V VIN| ESP
         BUCK -->|5V VCC| RELAY_CTRL
         ESP -->|GND| RELAY_CTRL
         ESP -->|GPIO 23 Active LOW| RELAY_CTRL
-        ESP -->|GPIO 22| FLOAT
-        ESP -->|GND| FLOAT
+        ESP -->|GPIO 22 INPUT_PULLUP| FLOAT_EMPTY
+        ESP -->|GND| FLOAT_EMPTY
+        ESP -->|GPIO 21 INPUT_PULLUP| FLOAT_FULL
+        ESP -->|GND| FLOAT_FULL
     end
 
     subgraph Lastkreis ["Lastkreis 12V DC"]
@@ -98,13 +101,19 @@ Für den Garten- und Balkonbereich werden typischerweise **12V Gleichstrom-Tauch
           |  |  GND +----------------->| GND |            |           |
           |  +---+--+                  +-----+            |           |
           |      |                                        |           |
-          |      | GPIO 22                                |           |
-          |      | (INPUT_PULLUP)                         |           |
+          |      | GPIO 22 (INPUT_PULLUP)                 |           |
+          |   +--v--------------------------+             |           |
+          |   | SCHWIMMERSCHALTER UNTEN     |             |           |
+          |   | (Trockenlaufschutz / Leer)  |             |           |
+          |   +--+--------------------------+             |           |
           |      |                                        |           |
-          |   +--v-----------------------+                |           |
-          |   |    SCHWIMMERSCHALTER     |                |           |
-          |   | (Reed-Kontakt im Tank)   |                |           |
-          |   +--+-----------------------+                |           |
+          |      +------> GND (ESP32)                     |           |
+          |      |                                        |           |
+          |      | GPIO 21 (INPUT_PULLUP)                 |           |
+          |   +--v--------------------------+             |           |
+          |   | SCHWIMMERSCHALTER OBEN      |             |           |
+          |   | (Füllstandsanzeige / Voll)  |             |           |
+          |   +--+--------------------------+             |           |
           |      |                                        |           |
           |      +------> GND (ESP32)                     |           |
           |                                               |           |
@@ -178,15 +187,16 @@ Falls eine reguläre 230V Schuko-Gartenpumpe geschaltet werden soll:
 
 *(Hinweis: Bei Modulen mit separatem Jumper `JD-VCC / VCC` kann der Jumper gesteckt bleiben, wenn 5V vom gemeinsamen Netzteil kommt).*
 
-### Trockenlaufschutz (ESP32 $\leftrightarrow$ Schwimmerschalter)
+### Füllstandsüberwachung (ESP32 $\leftrightarrow$ Schwimmerschalter)
 
-| ESP32 Pin | Schwimmerschalter | Modus | Signalzustand |
+| ESP32 Pin | Schwimmerschalter | Modus | Signalzustand / Funktion |
 | :--- | :--- | :--- | :--- |
-| **GPIO 22** | Kontakt 1 | `INPUT_PULLUP` | Intern auf 3.3V gezogen |
-| **GND** | Kontakt 2 | Masse | Schließt Kontakt gegen GND |
+| **GPIO 22** | Unterer Schwimmer (Kontakt 1) | `INPUT_PULLUP` | **Trockenlaufschutz** (`LOW` = Wasser vorh., `HIGH` = Tank leer) |
+| **GPIO 21** | Oberer Schwimmer (Kontakt 1) | `INPUT_PULLUP` | **Tank Voll Anzeige** (`LOW` = Tank VOLL, `HIGH` = Nicht voll) |
+| **GND** | Beide Schwimmer (Kontakt 2) | Masse | Schließen gegen GND |
 
-- **Wasser vorhanden (Schwimmer oben):** Schalter geschlossen $\rightarrow$ GPIO 22 misst `LOW` $\rightarrow$ Pumpe darf laufen.
-- **Wassertank leer (Schwimmer unten):** Schalter offen $\rightarrow$ GPIO 22 misst `HIGH` $\rightarrow$ NOT-AUS / Pumpe gesperrt.
+- **Unterer Schwimmer (GPIO 22):** `LOW` = Wasserstand ausreichend (Pumpe darf laufen) \| `HIGH` = Not-Aus / Pumpe gesperrt.
+- **Oberer Schwimmer (GPIO 21):** `LOW` = Tank voll (Matter Contact Sensor: Geschlossen) \| `HIGH` = Unterhalb Maximalstand (Offen).
 
 ### Lastseite (Relais $\leftrightarrow$ 12V DC Pumpe)
 
@@ -215,10 +225,18 @@ Ein einziges **12V DC Netzteil** (mind. 2A bis 3A, je nach Pumpenleistung) verso
 
 ---
 
-## 6. Schwimmerschalter (Trockenlaufschutz)
+## 6. Schwimmerschalter (Trockenlaufschutz & Voll-Meldung)
 
-### Mechanische Montage
-- Befestige den Schwimmerschalter ca. 5–10 cm über dem Ansaugstutzen der Pumpe im Regenfass.
+Das System nutzt zwei Schwimmerschalter zur zuverlässigen Überwachung des Wasserreservoirs:
+
+1. **Unterer Schwimmerschalter (Trockenlaufschutz, GPIO 22):**
+   - Montage ca. 5–10 cm über dem Ansaugstutzen der Tauchpumpe.
+   - **Logik:** Schwimmer oben = Kontakt geschlossen (`LOW`), Schwimmer unten = Kontakt offen (`HIGH` $\rightarrow$ NOT-AUS).
+2. **Oberer Schwimmerschalter (Tank voll / Füllstandsanzeige, GPIO 21):**
+   - Montage nahe der maximalen Füllhöhe des Regenfasses / Wassertanks.
+   - **Logik:** Erreicht das Wasser die Maximalmarke, schwimmt der Ring auf und schließt den Kontakt gegen GND (`LOW`). Der ESP32 meldet den Zustand über den Matter Contact Sensor als *Geschlossen* (Tank voll) an Google Home.
+
+### Mechanische Montage & Kontakttest
 - **Prüfung der Kontaktlogik mit dem Multimeter vor Einbau:**
   - Standardmäßig sind Schwimmer so konstruiert, dass der interne Magnetkontakt bei aufschwimmendem Ring **schließt**.
   - Sollte der Schalter umgekehrt arbeiten, lässt sich bei den meisten Modellen der Sicherungsring an der Unterseite abziehen und der Schwimmerkörper um 180° gedreht wieder aufstecken.
@@ -228,7 +246,7 @@ Ein einziges **12V DC Netzteil** (mind. 2A bis 3A, je nach Pumpenleistung) verso
 ## 7. Wichtige Praxistipps & Schutzmaßnahmen
 
 1. **Active-LOW Relaislogik beachten:**
-   Beim Einschalten des ESP32 sind GPIOs für Bruchteile einer Sekunde potenzialfrei. Im Sketch ([`sketch/sketch.ino:L80`](file:///Users/martinkade/Projekte/SmartHome/Watering/sketch/sketch.ino#L80)) wird `digitalWrite(RELAY_PIN, HIGH)` vor dem Aktivieren ausgeführt, damit die Pumpe beim Booten garantiert aus bleibt.
+   Beim Einschalten des ESP32 sind GPIOs für Bruchteile einer Sekunde potenzialfrei. Im Sketch ([`sketch/sketch.ino:L97`](file:///Users/martinkade/Projekte/SmartHome/Watering/sketch/sketch.ino#L97)) wird `digitalWrite(RELAY_PIN, HIGH)` vor dem Aktivieren ausgeführt, damit die Pumpe beim Booten garantiert aus bleibt.
 2. **Kondensator zur Glättung (Optional, aber empfohlen):**
    Ein **100 µF bis 470 µF Elektrolytkondensator** zwischen 5V und GND am ESP32 fängt Stromspitzen beim Einschalten des WLAN/Matter-Senders und des Relais ab.
 3. **Wasserdichtes Gehäuse:**
@@ -244,7 +262,7 @@ Ein einziges **12V DC Netzteil** (mind. 2A bis 3A, je nach Pumpenleistung) verso
 | :--- | :--- | :--- |
 | **Mikrocontroller** | ESP32 NodeMCU (WROOM-32, mind. 4MB Flash) | [🛒 ESP32 NodeMCU auf Amazon](https://www.amazon.de/s?k=ESP32+NodeMCU+Development+Board) |
 | **Relais** | 1-Kanal 5V Relais mit Optokoppler (Active LOW) | [🛒 5V Relaismodul auf Amazon](https://www.amazon.de/s?k=Relais+Modul+5V+1+Kanal+Optokoppler) |
-| **Pegelsensor** | Schwimmerschalter / Reed-Schalter (vertikal oder horizontal) | [🛒 Schwimmerschalter auf Amazon](https://www.amazon.de/s?k=Schwimmerschalter+Wasserstandssensor) |
+| **Pegelsensoren** | 2x Schwimmerschalter / Reed-Schalter (1x Leer/Trockenlauf, 1x Voll) | [🛒 Schwimmerschalter auf Amazon](https://www.amazon.de/s?k=Schwimmerschalter+Wasserstandssensor) |
 | **Pumpe** | 12V DC Tauchpumpe für Garten / Wassertank | [🛒 12V Tauchpumpe auf Amazon](https://www.amazon.de/s?k=12V+Tauchpumpe+Garten+Wasser) |
 | **Netzteil** | 12V DC Netzteil (mind. 2A, z. B. mit Hohlstecker/Klemmen) | [🛒 12V DC Netzteil auf Amazon](https://www.amazon.de/s?k=12V+2A+Netzteil+DC) |
 | **Spannungswandler** | LM2596 Step-Down Buck Converter (12V $\rightarrow$ 5V) | [🛒 LM2596 Wandler auf Amazon](https://www.amazon.de/s?k=LM2596+Step-Down+Wandler) |

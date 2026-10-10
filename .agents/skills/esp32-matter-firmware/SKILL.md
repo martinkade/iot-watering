@@ -18,9 +18,11 @@ Before saving or deploying any changes to `sketch/sketch.ino`:
    - Verify `digitalWrite(RELAY_PIN, HIGH);` occurs in `setup()` immediately upon boot.
    - Verify that turning the pump ON writes `LOW` and turning it OFF writes `HIGH`.
 2. **Dry-Run Protection (Two-Tier Check)**:
-   - **Tier 1 (Callback)**: `onPumpStateChange()` must check `digitalRead(FLOAT_SWITCH_PIN) == LOW` before setting `digitalWrite(RELAY_PIN, LOW)`.
-   - **Tier 2 (Loop Watchdog)**: `loop()` must check `if (digitalRead(RELAY_PIN) == LOW && digitalRead(FLOAT_SWITCH_PIN) == HIGH)` and immediately force the relay to `HIGH` and `matterPump.setState(false)`.
-3. **Matter State Synchronization**:
+   - **Tier 1 (Callback)**: `onPumpStateChange()` must check `digitalRead(FLOAT_EMPTY_PIN) == LOW` before setting `digitalWrite(RELAY_PIN, LOW)`.
+   - **Tier 2 (Loop Watchdog)**: `loop()` must check `if (digitalRead(RELAY_PIN) == LOW && digitalRead(FLOAT_EMPTY_PIN) == HIGH)` and immediately force the relay to `HIGH` and `matterPump.setState(false)`.
+3. **Tank Full Monitoring (Upper Float Switch)**:
+   - Verify `FLOAT_FULL_PIN` (`GPIO 21`) updates `matterTankFull.setContact()` on state change (`LOW` = full / closed).
+4. **Matter State Synchronization**:
    - Any hardware-triggered shutdown must update the Matter cluster state (`matterPump.setState(false)`) so Google Home reflects the actual state.
 
 ---

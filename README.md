@@ -25,6 +25,7 @@ Das System steuert eine Wasserpumpe bzw. ein Magnetventil über ein Relais und v
 ## ✨ Features
 
 - **Natives Matter-over-Wi-Fi**: Wird direkt als smarter Aktor (*On/Off Outlet / Steckdose*) von Matter-Controllern erkannt.
+- **Füllstandssensor in Google Home**: Zweiter Schwimmerschalter wird als **Contact Sensor (Kontaktsensor)** abgebildet (*Geschlossen = Tank VOLL*, *Offen = Nicht voll*).
 - **Google Home Integration**: Steuerung per App, Sprachbefehl (*„Hey Google, schalte die Gartenbewässerung ein“*) und Automatisierungen / Zeitpläne.
 - **Hardware-Trockenlaufschutz**:
   - Verhindert das Einschalten bei leerem Wassertank.
@@ -42,7 +43,8 @@ graph TD
     SM[Smartphone] -.->|BLE Inbetriebnahme| ESP
     ESP -->|GPIO 23 / Active LOW| RELAY[Relais-Modul]
     RELAY --> PUMP[Pumpe / Ventil 12V/230V]
-    FLOAT[Schwimmerschalter] -->|GPIO 22 / INPUT_PULLUP| ESP
+    FLOAT_EMPTY[Schwimmer Unten / Leer] -->|GPIO 22 / INPUT_PULLUP| ESP
+    FLOAT_FULL[Schwimmer Oben / Voll] -->|GPIO 21 / INPUT_PULLUP| ESP
 ```
 
 ---
@@ -55,7 +57,7 @@ Die folgenden Komponenten werden für den Aufbau benötigt. Über die Links gela
 | :--- | :--- | :--- |
 | **ESP32 Dev Module** | ESP32-WROOM-32 / NodeMCU (mind. **4 MB Flash**, Wi-Fi + BLE) | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=ESP32+NodeMCU+Development+Board) |
 | **1-Kanal Relais-Modul** | 5V Steuerkreis mit Optokoppler, Active-LOW, Schließer (`NO`) | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=Relais+Modul+5V+1+Kanal+Optokoppler) |
-| **Schwimmerschalter** | Pegelsensor / Reed-Kontakt für Wassertank (`INPUT_PULLUP` gegen GND) | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=Schwimmerschalter+Wasserstandssensor) |
+| **Schwimmerschalter (2x)** | Pegelsensoren für Wassertank (1x Trockenlauf unten, 1x Voll-Meldung oben) | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=Schwimmerschalter+Wasserstandssensor) |
 | **12V DC Tauchpumpe** | 12V Kleinspannungs-Tauchpumpe für Garten/Wassertank | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=12V+Tauchpumpe+Garten+Wasser) |
 | **12V DC Netzteil** | 12V DC Steckernetzteil, mind. 2A bis 3A | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=12V+2A+Netzteil+DC) |
 | **Step-Down Wandler** | LM2596 / Buck-Converter (wandelt 12V in stabile 5V für ESP32/Relais) | [🛒 Auf Amazon suchen](https://www.amazon.de/s?k=LM2596+Step-Down+Wandler) |
@@ -68,10 +70,11 @@ Die folgenden Komponenten werden für den Aufbau benötigt. Über die Links gela
 
 ## 🔌 Pinbelegung & Verdrahtung
 
-| Komponente | ESP32 GPIO | Modus | Bemerkung |
+| Komponente | ESP32 GPIO | Modus | Funktion / Signal |
 | :--- | :--- | :--- | :--- |
 | **Relais (Pumpe)** | `GPIO 23` | `OUTPUT` | Active-LOW: `LOW` = Relais AN, `HIGH` = Relais AUS |
-| **Schwimmerschalter** | `GPIO 22` | `INPUT_PULLUP` | Gegen `GND` geschaltet (`LOW` = Wasser vorhanden) |
+| **Schwimmerschalter Unten** | `GPIO 22` | `INPUT_PULLUP` | Trockenlaufschutz (`LOW` = Wasser vorh., `HIGH` = Tank leer) |
+| **Schwimmerschalter Oben** | `GPIO 21` | `INPUT_PULLUP` | Tank VOLL Anzeige (`LOW` = Tank voll, `HIGH` = Nicht voll) |
 
 ### Schematischer Anschluss
 
@@ -81,8 +84,12 @@ ESP32                    Relais-Modul
   GND      ------------> GND
   5V/VIN   ------------> VCC
 
-ESP32                    Schwimmerschalter (Tank)
+ESP32                    Schwimmerschalter Unten (Trockenlauf)
   GPIO 22  ------------> Kontakt 1
+  GND      ------------> Kontakt 2
+
+ESP32                    Schwimmerschalter Oben (Tank Voll)
+  GPIO 21  ------------> Kontakt 1
   GND      ------------> Kontakt 2
 ```
 
@@ -144,17 +151,21 @@ Unter dem Menü **Werkzeuge (Tools)** folgende Optionen wählen:
 
 ---
 
-## 🛡 Sicherheitslogik (Trockenlaufschutz)
+## 🛡 Sicherheits- & Füllstandslogik
 
-Das System schützt die Pumpe in zwei Stufen vor Trockenlaufschäden:
+Das System schützt die Pumpe vor Trockenlaufschäden und meldet den maximalen Füllstand:
 
-1. **Präventive Einschaltblockade** ([sketch.ino:L40-L68](file:///Users/martinkade/Projekte/SmartHome/Watering/sketch/sketch.ino#L40-L68)):
-   - Erhält der ESP32 einen Einschaltbefehl von Google Home, prüft `onPumpStateChange()`, ob der Schwimmerschalter geschlossen ist (`LOW`).
+1. **Präventive Einschaltblockade** ([sketch.ino:L57-L85](file:///Users/martinkade/Projekte/SmartHome/Watering/sketch/sketch.ino#L57-L85)):
+   - Erhält der ESP32 einen Einschaltbefehl von Google Home, prüft `onPumpStateChange()`, ob der untere Schwimmerschalter geschlossen ist (`LOW`).
    - Ist der Tank leer (`HIGH`), wird das Relais **nicht** aktiviert und der Status in Google Home sofort wieder auf `AUS` gesetzt.
 
-2. **Echtzeit-Notabschaltung** ([sketch.ino:L112-L121](file:///Users/martinkade/Projekte/SmartHome/Watering/sketch/sketch.ino#L112-L121)):
+2. **Echtzeit-Notabschaltung** ([sketch.ino:L136-L145](file:///Users/martinkade/Projekte/SmartHome/Watering/sketch/sketch.ino#L136-L145)):
    - Im `loop()` wird kontinuierlich überwacht, ob während des Betriebs der Wasserpegel abfällt.
-   - Sinkt der Pegel unter das Limit, schaltet der ESP32 das Relais unmittelbar ab und setzt den Matter-Status auf `false`.
+   - Sinkt der Pegel unter das Limit, schaltet der ESP32 das Relais unmittelbar ab und setzt den Matter-Status der Pumpe auf `false`.
+
+3. **Füllstandsanzeige "Tank voll"** ([sketch.ino:L147-L156](file:///Users/martinkade/Projekte/SmartHome/Watering/sketch/sketch.ino#L147-L156)):
+   - Der obere Schwimmerschalter (`GPIO 21`) überwacht den maximalen Pegelstand.
+   - Bei Erreichen der Höchstmarke schließt der Kontakt (`LOW`) und der Matter-Kontaktsensor meldet den Zustand *Geschlossen* (Tank voll) an Google Home.
 
 ---
 

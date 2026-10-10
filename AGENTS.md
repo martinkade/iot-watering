@@ -24,7 +24,8 @@ Any modifications to pin definitions or electrical logic MUST adhere to these ex
 | Pin | Connected Hardware | Electrical Logic | Notes |
 | :--- | :--- | :--- | :--- |
 | `GPIO 23` | 1-Channel Relay Module (`IN`) | **Active-LOW** | `LOW` = Relay closed / Pump ON<br>`HIGH` = Relay open / Pump OFF |
-| `GPIO 22` | Float Switch (Water reservoir) | **INPUT_PULLUP** | `LOW` = Switch closed (Water available)<br>`HIGH` = Switch open (Tank empty / Dry-run) |
+| `GPIO 22` | Lower Float Switch (Reservoir empty) | **INPUT_PULLUP** | `LOW` = Switch closed (Water available)<br>`HIGH` = Switch open (Tank empty / Dry-run) |
+| `GPIO 21` | Upper Float Switch (Reservoir full) | **INPUT_PULLUP** | `LOW` = Switch closed (Tank FULL / max reached)<br>`HIGH` = Switch open (Tank not full) |
 
 > [!CAUTION]
 > **Active-LOW Relay Logic**:
@@ -37,11 +38,11 @@ Any modifications to pin definitions or electrical logic MUST adhere to these ex
 The system protects the water pump from running dry through a **two-tier defense mechanism**. Agents modifying `sketch/sketch.ino` MUST preserve both tiers:
 
 1. **Pre-Check in Command Callback (`onPumpStateChange`)**:
-   - Before switching the pump `ON`, the float switch MUST be checked (`digitalRead(FLOAT_SWITCH_PIN) == LOW`).
+   - Before switching the pump `ON`, the lower float switch MUST be checked (`digitalRead(FLOAT_EMPTY_PIN) == LOW`).
    - If the tank is empty, the command MUST be rejected (`return false`), the relay MUST remain `HIGH`, and `matterPump.setState(false)` MUST be called to synchronize the UI in Google Home.
 
 2. **Real-Time Watchdog in `loop()`**:
-   - If the pump is running (`digitalRead(RELAY_PIN) == LOW`) AND the float switch opens (`digitalRead(FLOAT_SWITCH_PIN) == HIGH`), the pump MUST immediately shut off (`digitalWrite(RELAY_PIN, HIGH)`) and Matter state updated to `false`.
+   - If the pump is running (`digitalRead(RELAY_PIN) == LOW`) AND the lower float switch opens (`digitalRead(FLOAT_EMPTY_PIN) == HIGH`), the pump MUST immediately shut off (`digitalWrite(RELAY_PIN, HIGH)`) and Matter state updated to `false`.
 
 ---
 
@@ -49,7 +50,9 @@ The system protects the water pump from running dry through a **two-tier defense
 
 - **Arduino Core**: Espressif ESP32 Arduino Core `>= 3.0.0` with integrated Matter support.
 - **Partition Scheme**: Requires large application partition (e.g., `Minimal SPIFFS (Large APPS with OTA)` or dedicated Matter partition) due to Matter stack flash requirements.
-- **Matter Cluster**: The pump is modeled as an `On/Off Outlet` cluster (`MatterOutlet`), providing native switch functionality and timer routines in Google Home.
+- **Matter Clusters**:
+  - **Pump**: Modeled as an `On/Off Outlet` cluster (`MatterOutlet`), providing switch functionality and timer routines in Google Home.
+  - **Tank Full Indicator**: Modeled as a `Contact Sensor` cluster (`MatterContactSensor`), providing real-time tank level status (Closed = Full, Open = Not Full).
 - **Language Policy**:
   - Source code comments and identifiers: **English**.
   - User-facing documentation (`README.md`, `SKETCH.md`, `PROJECT.md`): **German** (matching user's preferred docs).
